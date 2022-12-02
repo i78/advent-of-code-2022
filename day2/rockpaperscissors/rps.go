@@ -33,9 +33,9 @@ type RequiredResultsJob struct {
 type RequiredResultsJobs []RequiredResultsJob
 
 const TelegramSeparator = "\n"
-const ItemSeparator = " "
+const TokenSeparator = " "
 
-func MapRecord(record string) (result Rps) {
+func MapPlayerMove(record string) (result Rps) {
 	switch strings.TrimSpace(record) {
 	case "A", "X":
 		result = Rock
@@ -65,13 +65,11 @@ func MapRequiredResult(s string) (result MatchResult) {
 
 func NewRoundsList(raw string) (result []Round) {
 	for _, telegram := range strings.Split(raw, TelegramSeparator) {
-		records := strings.Split(telegram, ItemSeparator)
-		opponent := MapRecord(records[0])
-		player := MapRecord(records[1])
+		playerMoves := strings.Split(telegram, TokenSeparator)
 
 		result = append(result, Round{
-			Opponent: opponent,
-			Player:   player,
+			Opponent: MapPlayerMove(playerMoves[0]),
+			Player:   MapPlayerMove(playerMoves[1]),
 		})
 	}
 	return
@@ -79,8 +77,8 @@ func NewRoundsList(raw string) (result []Round) {
 
 func NewRequiredScoreJobList(raw string) (result RequiredResultsJobs) {
 	for _, telegram := range strings.Split(raw, TelegramSeparator) {
-		records := strings.Split(telegram, ItemSeparator)
-		opponent := MapRecord(records[0])
+		records := strings.Split(telegram, TokenSeparator)
+		opponent := MapPlayerMove(records[0])
 		requiredResult := MapRequiredResult(records[1])
 
 		result = append(result, RequiredResultsJob{
@@ -95,8 +93,6 @@ func NewRequiredScoreJobList(raw string) (result RequiredResultsJobs) {
 
 func (jobs *RequiredResultsJobs) MapToRounds() (result []Round) {
 	for _, job := range *jobs {
-		choices := []Rps{Rock, Paper, Scissors}
-
 		with := func(playerChoice Rps) Round {
 			return Round{
 				Opponent: job.Opponent,
@@ -104,9 +100,10 @@ func (jobs *RequiredResultsJobs) MapToRounds() (result []Round) {
 			}
 		}
 
-		for _, choice := range choices {
+		for _, choice := range []Rps{Rock, Paper, Scissors} {
 			if attempt := with(choice); attempt.MatchResult() == job.RequiredResult {
 				result = append(result, attempt)
+				continue
 			}
 		}
 	}
@@ -118,13 +115,11 @@ func (r *Round) MatchResult() MatchResult {
 		return Draw
 	}
 
-	beats := map[Rps]Rps{
+	if map[Rps]Rps{
 		Rock:     Scissors,
 		Paper:    Rock,
 		Scissors: Paper,
-	}
-
-	if beats[r.Player] == r.Opponent {
+	}[r.Player] == r.Opponent {
 		return Win
 	}
 
@@ -141,7 +136,7 @@ func (r *Round) Score() (score int) {
 
 	score += int(r.Player)
 
-	return score
+	return
 }
 
 func TotalScore(rounds []Round) (score int) {
