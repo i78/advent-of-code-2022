@@ -16,40 +16,27 @@ type Node struct {
 	Type     NodeType
 	Size     int
 	Children []*Node
+	Parent   *Node
 }
 
-func NewDirectoryNode(path string) *Node {
+func NewDirectoryNode(path string, parent *Node) *Node {
 	return &Node{
 		Name:     path,
 		Type:     Directory,
 		Size:     0,
-		Children: []*Node{},
+		Children: make([]*Node, 0, 2),
+		Parent:   parent,
 	}
 }
 
-func NewFileNode(name string, size int) *Node {
+func NewFileNode(name string, size int, parent *Node) *Node {
 	return &Node{
 		Name:     name,
 		Type:     File,
 		Size:     size,
 		Children: nil,
+		Parent:   parent,
 	}
-}
-
-func (node *Node) InsertAtPath(path []string, newNode *Node) {
-	if len(path) == 0 {
-		node.AddChild(newNode)
-	} else {
-		topmostItemName := path[0]
-		targetNode, exists := node.FindChild(topmostItemName)
-
-		if !exists {
-			targetNode = node.AddChild(NewDirectoryNode(topmostItemName))
-		}
-
-		targetNode.InsertAtPath(path[1:], newNode)
-	}
-	return
 }
 
 func (node *Node) FindChild(path string) (result *Node, found bool) {
@@ -57,9 +44,7 @@ func (node *Node) FindChild(path string) (result *Node, found bool) {
 }
 
 func (node *Node) AddChild(child *Node) *Node {
-	if _, exists := node.FindChild(child.Name); !exists {
-		node.Children = append(node.Children, child)
-	}
+	node.Children = append(node.Children, child)
 	return child
 }
 

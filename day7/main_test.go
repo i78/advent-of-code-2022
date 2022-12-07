@@ -3,6 +3,7 @@ package main
 import (
 	"dreese.de/aoc22/day7/fstree"
 	"github.com/stretchr/testify/assert"
+	"os"
 	"testing"
 )
 
@@ -41,4 +42,37 @@ func TestAOCAssignments(t *testing.T) {
 
 		assert.Equal(t, 24933642, smallestViableDirectorySize)
 	})
+}
+
+func BenchmarkPartOne(b *testing.B) {
+	content, _ := os.ReadFile("input.txt")
+
+	for i := 0; i < b.N; i++ {
+		tree := fstree.NewFsTree(string(content))
+		allDirs := tree.FindAllDirectories()
+		totalSizeOfSmallDirectories(allDirs, 100000)
+	}
+}
+
+func BenchmarkPartTwo(b *testing.B) {
+	content, _ := os.ReadFile("input.txt")
+
+	for i := 0; i < b.N; i++ {
+		tree := fstree.NewFsTree(string(content))
+		allDirs := tree.FindAllDirectories()
+		const size, required = 70000000, 30000000
+		smallestDirectorySuitableForDeletion(allDirs, spaceToBeReclaimed(size, required, tree.DirectorySize()))
+	}
+}
+
+func BenchmarkPartsCombined(b *testing.B) {
+	content, _ := os.ReadFile("input.txt")
+
+	for i := 0; i < b.N; i++ {
+		tree := fstree.NewFsTree(string(content))
+		allDirs := tree.FindAllDirectories()
+		const size, required = 70000000, 30000000
+		totalSizeOfSmallDirectories(allDirs, 100000)
+		smallestDirectorySuitableForDeletion(allDirs, spaceToBeReclaimed(size, required, tree.DirectorySize()))
+	}
 }
