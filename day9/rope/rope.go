@@ -5,32 +5,29 @@ import (
 )
 
 type Rope struct {
-	Head  Coordinate
-	Tails []Coordinate
+	Knots []Coordinate
 }
 
-type VisitInterceptor func(tailId int, coordinate Coordinate)
+type VisitDecorator struct {
+	ActOnKnot int
+	Fn        func(coordinate Coordinate)
+}
 
-func (r *Rope) MoveHead(direction Direction, steps int, interceptors ...VisitInterceptor) *Rope {
+func (r *Rope) MoveHead(direction Direction, steps int, decorators ...VisitDecorator) *Rope {
 	for step := 0; step < steps; step++ {
-		r.Head = r.Head.Step(direction)
+		r.Knots[0].Step(direction)
 
-		for tailId := range r.Tails {
-			current := &r.Tails[tailId]
-			var previous *Coordinate
-
-			if tailId == 0 {
-				previous = &r.Head
-			} else {
-				previous = &r.Tails[tailId-1]
-			}
+		for tailId := 1; tailId < len(r.Knots); tailId++ {
+			current, previous := &r.Knots[tailId], &r.Knots[tailId-1]
 
 			if !current.IsAdjectant(previous) {
 				current.EnsureAdjectant(previous)
 			}
 
-			for _, i := range interceptors {
-				i(tailId, r.Tails[tailId])
+			for _, i := range decorators {
+				if i.ActOnKnot == tailId {
+					i.Fn(r.Knots[tailId])
+				}
 			}
 		}
 	}

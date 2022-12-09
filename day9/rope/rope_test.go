@@ -80,49 +80,25 @@ func TestShouldRemainAdjectant(t *testing.T) {
 		expected Rope
 	}{
 		{
-			before: Rope{
-				Head:  Coordinate{X: 0, Y: 0},
-				Tails: []Coordinate{{X: 0, Y: 0}},
-			},
+			before:    Rope{Knots: []Coordinate{{X: 0, Y: 0}, {X: 0, Y: 0}}},
 			Direction: Right,
 			steps:     2,
-			expected: Rope{
-				Head:  Coordinate{X: 2, Y: 0},
-				Tails: []Coordinate{{X: 1, Y: 0}},
-			},
+			expected:  Rope{Knots: []Coordinate{{X: 2, Y: 0}, {X: 1, Y: 0}}},
 		}, {
-			before: Rope{
-				Head:  Coordinate{X: 0, Y: 0},
-				Tails: []Coordinate{{X: 0, Y: 0}},
-			},
+			before:    Rope{Knots: []Coordinate{{X: 0, Y: 0}, {X: 0, Y: 0}}},
 			Direction: Down,
 			steps:     2,
-			expected: Rope{
-				Head:  Coordinate{X: 0, Y: -2},
-				Tails: []Coordinate{{X: 0, Y: -1}},
-			},
+			expected:  Rope{Knots: []Coordinate{{X: 0, Y: -2}, {X: 0, Y: -1}}},
 		}, {
-			before: Rope{
-				Head:  Coordinate{X: 4, Y: 1},
-				Tails: []Coordinate{{X: 3, Y: 0}},
-			},
+			before:    Rope{Knots: []Coordinate{{X: 4, Y: 1}, {X: 3, Y: 0}}},
 			Direction: Up,
 			steps:     1,
-			expected: Rope{
-				Head:  Coordinate{X: 4, Y: 2},
-				Tails: []Coordinate{{X: 4, Y: 1}},
-			},
+			expected:  Rope{Knots: []Coordinate{{X: 4, Y: 2}, {X: 4, Y: 1}}},
 		}, {
-			before: Rope{
-				Head:  Coordinate{X: 4, Y: 1},
-				Tails: []Coordinate{{X: 3, Y: 0}, {X: 2, Y: 0}},
-			},
+			before:    Rope{Knots: []Coordinate{{X: 4, Y: 1}, {X: 3, Y: 0}, {X: 2, Y: 0}}},
 			Direction: Up,
 			steps:     2,
-			expected: Rope{
-				Head:  Coordinate{X: 4, Y: 3},
-				Tails: []Coordinate{{X: 4, Y: 2}, {X: 3, Y: 1}},
-			},
+			expected:  Rope{Knots: []Coordinate{{X: 4, Y: 3}, {X: 4, Y: 2}, {X: 3, Y: 1}}},
 		},
 	}
 
@@ -153,10 +129,9 @@ func TestRecordVisits(t *testing.T) {
 				{Right, 2},
 			},
 			Rope: Rope{
-				Head:  Coordinate{X: 0, Y: 0},
-				Tails: []Coordinate{{X: 0, Y: 0}},
+				Knots: []Coordinate{{X: 0, Y: 0}, {X: 0, Y: 0}},
 			},
-			observedTail:        0,
+			observedTail:        1,
 			expectedNumOfVisits: 13,
 		}, {
 			Moves: Moves{
@@ -170,10 +145,9 @@ func TestRecordVisits(t *testing.T) {
 				{Up, 20},
 			},
 			Rope: Rope{
-				Head:  Coordinate{X: 0, Y: 0},
-				Tails: make([]Coordinate, 9, 9),
+				Knots: make([]Coordinate, 10),
 			},
-			observedTail:        8,
+			observedTail:        9,
 			expectedNumOfVisits: 36,
 		},
 	}
@@ -181,18 +155,18 @@ func TestRecordVisits(t *testing.T) {
 	for caseId, testcase := range testcases {
 		t.Run(fmt.Sprintf("Should return %d for %d", testcase.expectedNumOfVisits, caseId), func(t *testing.T) {
 			var visits []Coordinate
-			visitInterceptor := func(tailId int, coordinate Coordinate) {
-				if tailId == testcase.observedTail && lo.IndexOf(visits, coordinate) == -1 {
-					visits = append(visits, coordinate)
-				}
+
+			decorator := VisitDecorator{
+				ActOnKnot: testcase.observedTail,
+				Fn: func(coordinate Coordinate) {
+					if lo.IndexOf(visits, coordinate) == -1 {
+						visits = append(visits, coordinate)
+					}
+				},
 			}
 
-			for _, move := range testcase.Moves {
-				testcase.Rope.MoveHead(move.Direction, move.Steps, visitInterceptor)
-			}
-
+			testcase.Moves.Apply(testcase.Rope, decorator)
 			assert.Len(t, visits, testcase.expectedNumOfVisits)
-
 		})
 	}
 }
@@ -200,15 +174,14 @@ func TestRecordVisits(t *testing.T) {
 func TestRobeWithMultipleKnots(t *testing.T) {
 	fakeRobe := func() Rope {
 		return Rope{
-			Head:  Coordinate{X: 0, Y: 0},
-			Tails: []Coordinate{{X: 0, Y: 0}, {X: 0, Y: 0}, {X: 0, Y: 0}},
+			Knots: []Coordinate{{X: 0, Y: 0}, {X: 0, Y: 0}, {X: 0, Y: 0}, {X: 0, Y: 0}},
 		}
 	}
 
 	t.Run("Should move all tails out of start when moved away 4 steps", func(t *testing.T) {
 		subject := fakeRobe()
 		subject.MoveHead(Right, 4)
-		assert.Equal(t, []Coordinate{{X: 3, Y: 0}, {X: 2, Y: 0}, {X: 1, Y: 0}}, subject.Tails)
+		assert.Equal(t, []Coordinate{{X: 4, Y: 0}, {X: 3, Y: 0}, {X: 2, Y: 0}, {X: 1, Y: 0}}, subject.Knots)
 	})
 
 	t.Run("Should move all tails out of start and 90deg shift when moved away 4,4 steps", func(t *testing.T) {
@@ -216,6 +189,6 @@ func TestRobeWithMultipleKnots(t *testing.T) {
 		subject.MoveHead(Right, 4).
 			MoveHead(Up, 6)
 
-		assert.Equal(t, []Coordinate{{X: 4, Y: 5}, {X: 4, Y: 4}, {X: 4, Y: 3}}, subject.Tails)
+		assert.Equal(t, []Coordinate{{X: 4, Y: 6}, {X: 4, Y: 5}, {X: 4, Y: 4}, {X: 4, Y: 3}}, subject.Knots)
 	})
 }

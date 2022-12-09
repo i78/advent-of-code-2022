@@ -17,20 +17,25 @@ const (
 type Moves []Move
 
 type Coordinate struct {
-	X int
-	Y int
+	X int32
+	Y int32
 }
 
-func (c *Coordinate) Step(direction Direction) (result Coordinate) {
+func (c *Coordinate) Step(direction Direction) {
 	switch direction {
 	case Up:
-		result.X, result.Y = c.X, c.Y+1
+		c.Y = c.Y + 1
 	case Down:
-		result.X, result.Y = c.X, c.Y-1
+		c.Y = c.Y - 1
 	case Left:
-		result.X, result.Y = c.X-1, c.Y
+		c.X = c.X - 1
 	case Right:
-		result.X, result.Y = c.X+1, c.Y
+		c.X = c.X + 1
 	}
-	return
+}
+
+func (m Moves) Apply(rope Rope, interceptors ...VisitDecorator) {
+	for _, move := range m {
+		rope.MoveHead(move.Direction, move.Steps, interceptors...)
+	}
 }

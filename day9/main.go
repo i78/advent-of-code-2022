@@ -3,7 +3,6 @@ package main
 import (
 	"dreese.de/aoc22/day9/rope"
 	"fmt"
-	"github.com/samber/lo"
 	"log"
 	"os"
 )
@@ -19,40 +18,35 @@ func main() {
 }
 
 func SolveA(moves rope.Moves) int {
-	var visits []rope.Coordinate
-	visitInterceptor := func(_ int, coordinate rope.Coordinate) {
-		if lo.IndexOf(visits, coordinate) == -1 {
-			visits = append(visits, coordinate)
-		}
+	visits, visitCountingDecorator := buildVisitCountingDecorator(1)
+
+	shortRope := rope.Rope{
+		Knots: make([]rope.Coordinate, 2),
 	}
 
-	shortRobe := rope.Rope{
-		Head:  rope.Coordinate{X: 0, Y: 0},
-		Tails: make([]rope.Coordinate, 1, 1),
-	}
+	moves.Apply(shortRope, visitCountingDecorator)
 
-	for _, move := range moves {
-		shortRobe.MoveHead(move.Direction, move.Steps, visitInterceptor)
-	}
-
-	return len(visits)
+	return len(*visits)
 }
 
 func SolveB(moves rope.Moves) int {
-	var visits []rope.Coordinate
-	visitorInterceptor := func(tailId int, coordinate rope.Coordinate) {
-		if tailId == 8 && lo.IndexOf(visits, coordinate) == -1 {
-			visits = append(visits, coordinate)
-		}
-	}
+	visits, visitCountingDecorator := buildVisitCountingDecorator(9)
 
 	longRobe := rope.Rope{
-		Head:  rope.Coordinate{X: 0, Y: 0},
-		Tails: make([]rope.Coordinate, 9, 9),
+		Knots: make([]rope.Coordinate, 10),
 	}
 
-	for _, move := range moves {
-		longRobe.MoveHead(move.Direction, move.Steps, visitorInterceptor)
+	moves.Apply(longRobe, visitCountingDecorator)
+	return len(*visits)
+}
+
+func buildVisitCountingDecorator(actOnKnot int) (*map[rope.Coordinate]bool, rope.VisitDecorator) {
+	visits := make(map[rope.Coordinate]bool, 8192)
+	decorator := rope.VisitDecorator{
+		ActOnKnot: actOnKnot,
+		Fn: func(coordinate rope.Coordinate) {
+			visits[coordinate] = true
+		},
 	}
-	return len(visits)
+	return &visits, decorator
 }

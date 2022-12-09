@@ -28,8 +28,8 @@ func TestMoveHead(t *testing.T) {
 
 		for _, testcase := range testcases {
 			t.Run(fmt.Sprintf("Should return %v for %v,%c", testcase.expected, testcase.start, testcase.Direction), func(t *testing.T) {
-				subject := testcase.start.Step(testcase.Direction)
-				assert.Equal(t, testcase.expected, subject)
+				testcase.start.Step(testcase.Direction)
+				assert.Equal(t, testcase.expected, testcase.start)
 			})
 		}
 
